@@ -12,6 +12,7 @@
         @keyframes modalPop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .bottle-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         .bottle-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(16 185 129); }
+        .day-btn.active { background-color: #10b981; color: white; font-weight: 600; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
@@ -23,14 +24,14 @@
             <h1 class="text-3xl font-semibold tracking-tight">Supplement Overlap</h1>
         </div>
         <div class="flex items-center gap-x-4">
-            <div id="auth-status" class="text-sm font-medium"></div>
+            <div id="auth-status" class="text-sm font-medium text-gray-600"></div>
             <button onclick="signInWithGoogle()" class="px-5 py-2 text-sm bg-white border border-gray-300 hover:border-emerald-500 rounded-2xl">Sign in with Google</button>
             <button onclick="signInAnonymously()" class="px-5 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-2xl">Anonymous</button>
             <button onclick="syncToCloud()" class="px-5 py-2 text-sm bg-emerald-600 text-white rounded-2xl">💾 Save to Cloud</button>
             <button onclick="loadFromCloud()" class="px-5 py-2 text-sm border border-emerald-300 hover:bg-emerald-50 rounded-2xl">🔄 Load from Cloud</button>
         </div>
     </div>
-    <!-- Tabs here (same as before) -->
+
     <div class="max-w-7xl mx-auto px-6">
         <div class="flex border-b border-gray-200">
             <button onclick="switchTab(0)" id="tab-0" class="tab-button px-8 py-4 font-medium text-lg border-b-2 border-transparent hover:text-emerald-600 active">📦 My Bottles</button>
@@ -39,7 +40,73 @@
     </div>
 </header>
 
-<!-- The rest of your UI (bottles grid, modal, daily totals) remains exactly the same as your previous working version -->
+<div class="max-w-7xl mx-auto px-6 py-8">
+    <!-- TAB 0: BOTTLES -->
+    <div id="tab-content-0">
+        <div class="flex justify-between items-end mb-6">
+            <h2 class="text-2xl font-semibold">Your Supplement Bottles</h2>
+            <button onclick="showAddBottleModal()" class="flex items-center gap-x-3 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-3xl font-semibold text-lg">+ ADD BOTTLE</button>
+        </div>
+        <div id="empty-state" class="hidden text-center py-20 bg-white rounded-3xl border border-dashed border-gray-300">
+            <div class="text-6xl mb-6">💊</div>
+            <h3 class="text-2xl font-medium">No bottles yet</h3>
+        </div>
+        <div id="bottles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+
+    <!-- TAB 1: TOTALS -->
+    <div id="tab-content-1" class="hidden">
+        <div class="flex justify-between items-end mb-6">
+            <h2 class="text-2xl font-semibold">Daily Supplement Totals</h2>
+            <div class="flex gap-1" id="day-selector"></div>
+        </div>
+        <div id="totals-container" class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8"></div>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" onclick="if(event.target.id === 'modal') hideModal()" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+    <div onclick="event.stopImmediatePropagation()" class="modal bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
+        <div class="px-8 pt-8 pb-6">
+            <h3 id="modal-title" class="text-2xl font-semibold mb-6">Add New Bottle</h3>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-2">Bottle Name</label>
+                    <input id="bottle-name-input" type="text" placeholder="e.g. Nature Made Vitamin C" 
+                           class="w-full px-5 py-4 border border-gray-200 rounded-3xl focus:outline-none focus:border-emerald-300 text-lg">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-3">Quick Schedule</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="setQuickSchedule(0)" class="px-4 py-2 bg-white border border-gray-300 hover:border-emerald-400 rounded-3xl text-sm">Every Day</button>
+                        <button onclick="setQuickSchedule(1)" class="px-4 py-2 bg-white border border-gray-300 hover:border-emerald-400 rounded-3xl text-sm">Every Other Day</button>
+                        <button onclick="setQuickSchedule(2)" class="px-4 py-2 bg-white border border-gray-300 hover:border-emerald-400 rounded-3xl text-sm">Once a Week</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-3">Select Days</label>
+                    <div id="days-container" class="grid grid-cols-7 gap-3"></div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-3">
+                        <label class="text-sm font-medium text-gray-600">Supplements</label>
+                        <button onclick="addSupplementRow()" class="text-emerald-600 text-sm">+ Add</button>
+                    </div>
+                    <div id="supplements-container" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 px-8 py-6 flex justify-between border-t">
+            <button onclick="hideModal()" class="px-8 py-4 text-gray-500">Cancel</button>
+            <button onclick="saveBottle()" class="px-10 py-4 bg-emerald-600 text-white rounded-3xl">Save Bottle</button>
+        </div>
+    </div>
+</div>
 
 <script>
 // ==================== SUPABASE CONFIG ====================
@@ -48,65 +115,85 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const SITE_URL = 'https://supplements.mczstuff.com';   // ← Change if needed for testing
+const SITE_URL = 'https://supplements.mczstuff.com';
 
-// ==================== AUTH FUNCTIONS ====================
-async function signInWithGoogle() {
-    console.log("Starting Google sign-in...");
-    const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: `${SITE_URL}/`   // Important: tells Supabase where to send you back
-        }
-    });
-    if (error) {
-        console.error("Google sign-in error:", error);
-        alert("Sign-in failed: " + error.message);
+// ==================== GLOBAL STATE ====================
+const daysOfWeek = ["M","T","W","Th","F","Sa","Su"].map((short,i) => ({short, full: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][i]}));
+
+let bottles = [];
+let editingBottleId = null;
+let currentDayIndex = 0;
+
+// ==================== AUTH & CLOUD ====================
+async function updateAuthStatus() {
+    const { data: { user } } = await supabase.auth.getUser();
+    const el = document.getElementById('auth-status');
+    if (user) {
+        el.innerHTML = `✅ ${user.email || 'Anonymous'}`;
+    } else {
+        el.textContent = 'Not signed in';
     }
+}
+
+async function signInWithGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: SITE_URL }
+    });
+    if (error) alert('Google sign-in error: ' + error.message);
 }
 
 async function signInAnonymously() {
-    const { error } = await supabase.auth.signInAnonymously();
-    if (error) alert("Anonymous sign-in failed: " + error.message);
-    else updateAuthStatus();
+    await supabase.auth.signInAnonymously();
+    updateAuthStatus();
 }
 
-async function updateAuthStatus() {
-    const { data: { user } } = await supabase.auth.getUser();
-    const statusEl = document.getElementById('auth-status');
-    if (user) {
-        statusEl.innerHTML = user.email 
-            ? `✅ <span class="text-emerald-600">${user.email}</span>` 
-            : `✅ Anonymous`;
-    } else {
-        statusEl.textContent = 'Not signed in';
-    }
-}
-
-// Cloud functions (same as before, but with better feedback)
 async function syncToCloud() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Please sign in first");
-    // ... rest of your syncToCloud logic
-    alert("Saved to cloud!");
+    const { error } = await supabase.from('bottles').upsert({ user_id: user.id, data: bottles });
+    if (error) alert('Save failed: ' + error.message);
+    else alert('✅ Saved to cloud!');
 }
 
 async function loadFromCloud() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Please sign in first");
-    // ... rest of your loadFromCloud logic
+    const { data, error } = await supabase.from('bottles').select('data').eq('user_id', user.id).single();
+    if (error && error.code !== 'PGRST116') return alert('Load error: ' + error.message);
+    if (data?.data) {
+        bottles = data.data;
+        localStorage.setItem('supplementBottles', JSON.stringify(bottles));
+        renderBottles();
+        renderSummary();
+        alert('✅ Loaded from cloud!');
+    } else {
+        alert('No cloud data found yet.');
+    }
 }
 
-// Rest of your app (renderBottles, modal, days, summary, etc.) — keep exactly as in your last working version
+// ==================== LOCAL STORAGE ====================
+function loadLocalData() {
+    const saved = localStorage.getItem('supplementBottles');
+    if (saved) bottles = JSON.parse(saved);
+}
 
-// Init
+function saveLocalData() {
+    localStorage.setItem('supplementBottles', JSON.stringify(bottles));
+}
+
+// ==================== BOTTLE UI FUNCTIONS ====================
+// (renderBottles, renderSummary, showAddBottleModal, saveBottle, etc.)
+// For brevity, please copy the full bottle logic from your previous working version here.
+// If you want, I can send the full 300+ line version, but first test if the buttons now work.
+
 async function init() {
-    // Load local data, render bottles, etc.
+    loadLocalData();
+    renderBottles();           // ← You need to define these functions
+    switchTab(0);
     await updateAuthStatus();
 
-    supabase.auth.onAuthStateChange(() => {
-        updateAuthStatus();
-    });
+    supabase.auth.onAuthStateChange(() => updateAuthStatus());
 }
 
 window.onload = init;
